@@ -10,6 +10,7 @@ Disclaimers:
 from .utils.molecule import Molecule
 from .utils.calcs import length
 from itertools import combinations
+import numpy as np
 
 
 def f2b_f3b(mol_file):
@@ -22,9 +23,9 @@ def f2b_f3b(mol_file):
     -------
     '''
     current_molecule = Molecule(mol_file)
-    f2b_part = f2b(mol)
-    f3b_part = f3b(mol)
-    return f2b_part, f3b_part
+    f2b_part = f2b(current_molecule)
+    f3b_part = f3b(current_molecule)
+    return np.concatenate((f2b_part, f3b_part),axis=None)
 
 
 def f2b(mol):
@@ -47,15 +48,19 @@ def f2b(mol):
     if type(mol) == str:
         mol = Molecule(mol)
     M = 15
-    feat = np.zeros(mol.natoms, 15)
+    feat = np.zeros((max(mol.at_num),max(mol.at_num), M))
     for i in range(mol.n_atom):
         for j in range(mol.n_atom):
-            r_ij  = length(mol, i, j)
+            r_ij = length(mol, i, j)
             zi = mol.at_num[i]
             zj = mol.at_num[j]
-            Z = sorted([zi,zj])
+            Z = np.array(sorted([zi,zj]))-1
             for m in range(1,M+1):
-                feat[Z,m] += calc_distance**-m
+                if r_ij == 0:
+                    feat[Z[0],Z[1],m-1] = 0
+                else:
+                    feat[Z[0],Z[1],m-1] += r_ij**-m
+    return feat.ravel()
 
 def f3b(mol):
     '''
@@ -68,30 +73,31 @@ def f3b(mol):
     -------
     '''
     ## generate sequences without repetition of 3 elements
-    g = itertools.combinations(g,3)
-    atom = itertools.combination(np.arange(mol.n_atom),3)
+    g = combinations(range(1,7),3)
+    g_len = len(list(g))
+    F = np.zeros((max(mol.at_num),max(mol.at_num),max(mol.at_num),g_len,g_len,g_len))
     for i in range(mol.n_atom):
         for j in range(mol.n_atom):
             for k in range(mol.n_atom):
                 r_ij = length(mol, i, j)
                 r_ik = length(mol, i, k)
-                r_jk = length(mol, j , k)
-                Zi = mol.at_num(i)
-                Zj = mol.at_num(j)
-                Zk = mol.at_num(k)
+                r_jk = length(mol, j, k)
+                Zi = mol.at_num[i]
+                Zj = mol.at_num[j]
+                Zk = mol.at_num[k]
                 has_angle = False
-                if r_ij < B(Zi, Zj) and rik < B(Zi, Zk):
+                if r_ij < B(Zi, Zj) and r_ik < B(Zi, Zk):
                     has_angle = True
-                elif r_ik < B(Zi, Zk) and rjk < B(Zj, Zk):
+                elif r_ik < B(Zi, Zk) and r_jk < B(Zj, Zk):
                     has_angle = True
-                elif r_ij < B(Zi, Zj) and rjk < B(Zj, Zk):
+                elif r_ij < B(Zi, Zj) and r_jk < B(Zj, Zk):
                     has_angle = True
                 if not has_angle:
                     continue
-                Z = sorted([Zi,Zj, Zk])
+                Z = np.array(sorted([Zi,Zj, Zk]))-1
                 for set in g:
-                    F[Z,set[0],set[1],set[3]] += np.dot((np.dot(r_ij**-set[0],r_ik**-set[1])),r_jj**-set[3])
-
+                    F[Z[0],Z[1],Z[2],set[0]-1,set[1]-1,set[3]-1] += np.dot((np.dot(r_ij**-set[0],r_ik**-set[1])),r_ij**-set[3])
+    return F.ravel()
 
 def B(i,j):
     return 1.1*return_L(i,j)
@@ -105,7 +111,8 @@ def return_L(i,j):
     (6,6):1.51,
     (6,8):1.43,
     (6,7):1.47,
-    (8,8):1.48,
-    (8,7):1.40,
-    (7,7):1.45}
-    return Ldict[(i,j)]
+    (7,7):1.45,
+    (7,8):1.40,
+    (8,8):1.48}
+    ij_sort = sorted((i,j))
+    return Ldict[(ij_sort[0],ij_sort[1])]
