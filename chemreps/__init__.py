@@ -8,4 +8,9 @@ from . import bag_of_bonds
 from . import bat
 from . import just_bonds
 from . import dataset
-from . import fingerprints
+try:
+    import rdkit
+    from . import fingerprints
+except ImportError:
+   print('Warning: Optional dependency rdkit not installed, the fingerprints representation will not be available')
+
