@@ -129,22 +129,19 @@ def torsion(molecule, atomi, atomj, atomk, atoml):
     x = abcx * bcdx
     y = abcy * bcdy
     z = abcz * bcdz
-    dihedral = (x + y + z)/(sin(ang(a, b, c)) * sin(ang(b, c, d)))
-    if dihedral < -1.0:
-        dihedral = acos(-1.0)
-    elif dihedral > 1.0:
-        dihedral = acos(1.0)
-    else:
-        dihedral = acos(dihedral)
+    dihedral = (x + y + z) / (sin(ang(a, b, c)) * sin(ang(b, c, d)))
+    dihedral = acos(dihedral)
+
     cross_x = abcy * bcdz - abcz * bcdy
     cross_y = abcz * bcdx - abcx * bcdz
     cross_z = abcx * bcdy - abcy * bcdx
-    norm = cross_x*cross_x + cross_y*cross_y + cross_z*cross_z
+    norm = cross_x * cross_x + cross_y * cross_y + cross_z * cross_z
     cross_x /= norm
     cross_y /= norm
     cross_z /= norm
     sign = 1.0
-    dot = cross_x*uvec(0, b, c)+cross_y*uvec(1, b, c)+cross_z*uvec(2, b, c)
+    dot = cross_x * uvec(0, b, c) + cross_y * \
+        uvec(1, b, c) + cross_z * uvec(2, b, c)
     if dot < 0.0:
         sign == -1.0
-    return np.float16(sign*dihedral)
+    return np.float16(sign * dihedral)
