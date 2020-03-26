@@ -11,6 +11,28 @@ from .utils.molecule import Molecule
 from .utils.calcs import length
 from itertools import combinations
 import numpy as np
+import pandas as pd
+
+def resize(df):
+    ## find the largest size representation.
+    max_length_2b = df.Rep2b.map(len).max()
+    max_length_3b = df.Rep3b.map(len).max()
+    df2 = pd.DataFrame(columns = ['Name','Reps'])
+    for i in df.index:
+        # find the difference of the current rep and the longest rep
+        difference_2b = max_length_2b-len(df['Rep2b'][i])
+        difference_3b = max_length_3b-len(df['Rep3b'][i])
+        # append zeros to the reps shorter than the longest
+        if difference_2b !=0:
+            correct_len_array_2b = np.append(df['Rep2b'][i],np.zeros(difference_2b))
+        if difference_3b != 0:
+            correct_len_array_3b = np.append(df['Rep3b'][i],np.zeros(difference_3b))
+
+        final_vector = np.append(correct_len_array_2b,correct_len_array_3b)
+        df2[df['Name'][i]] = final_vector
+    ## resize all three-body vectors
+
+    return df2
 
 
 def f2b_f3b(mol_file):
